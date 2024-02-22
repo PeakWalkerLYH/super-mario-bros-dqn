@@ -1,0 +1,87 @@
+class CustomReward(Wrapper):
+    def __init__(self, env):
+        super(CustomReward, self).__init__(env)
+        self._current_score = 0
+
+    def step(self, action):
+        state, reward, done, info = self.env.step(action)
+        
+        # Modify the reward based on various factors
+        
+        # Influence of the current score
+        reward += (info['score'] - self._current_score) / 40.0
+        self._current_score = info['score']
+        
+        # Game completion
+        if done:
+            # Reward for successfully completing the game (flag obtained)
+            if info['flag_get']:
+                reward += 350.0  
+            else:
+                # Penalty for failing to complete the game
+                reward -= 50.0   
+        
+        # Collecting coins
+        if 'coins' in info and 'coins_collected' in info:
+            reward += info['coins_collected'] * 10.0
+        
+        # Stomping on enemies
+        if 'stomped_enemies' in info:
+            reward += info['stomped_enemies'] * 20.0
+        
+        # Taking damage from enemies
+        if 'damage_taken' in info:
+            reward -= info['damage_taken'] * 5.0
+        
+        # Falling off cliffs
+        if 'falls' in info:
+            reward -= info['falls'] * 30.0
+        
+        # Additional factors can be added based on the specific environment and desired rewards/penalties
+        
+        # Scale down the reward to avoid issues like gradient explosion
+        return state, reward / 10.0, done, info
+
+
+Explanation:
+
+Reward Factors:
+-	Influence of Current Score (Factor 1):
+Reward: The reward is adjusted based on the change in the current score compared to the previous step, providing a smooth influence on the reward.
+
+-	Game Completion (Factor 2):
+Reward: If the game is completed (flag obtained), a reward of 350.0 is added; otherwise, a penalty of 50.0 is applied.
+
+-	Power-ups Collected (Factor 3):
+Reward: Add points for collecting power-ups (info['powerups_collected']).
+
+-	Collecting Coins (Factor 4):
+Reward: The reward is increased based on the number of coins collected (info['coins_collected']).
+
+-	Stomping on Enemies (Factor 5):
+Reward: The reward is increased based on the number of enemies stomped (info['stomped_enemies']).
+
+-	Distance Traveled (Factor 6):
+Reward: Encourage exploration by rewarding the agent based on the distance traveled.
+
+-	Time Efficiency (Factor 7):
+Reward: Encourage faster completion by rewarding the agent based on time efficiency.
+
+-	Combo Multipliers (Factor 8):
+Reward: Implement combo systems that provide increasing rewards for consecutive successful actions
+
+Penalty Factors:
+-	Collision with Obstacles (Factor 1):
+Penalty: Deduct points for collisions with obstacles (info['obstacle_collisions']).
+
+-	Incorrect Actions (Factor 2):
+Penalty: Deduct points for unnecessary or incorrect actions.
+
+-	Taking Damage from Enemies (Factor 3):
+Penalty: The reward is decreased based on the amount of damage taken from enemies (info['damage_taken']).
+
+-	Falling off Cliffs (Factor 4):
+Penalty: The reward is decreased based on the number of falls off cliffs (info['falls']).
+
+-	Idle Time (Factor 5):
+Penalty: Deduct points if the agent remains idle for an extended period.
